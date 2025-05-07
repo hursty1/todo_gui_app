@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 import tkinter.messagebox as mbox
 import os
 from pathlib import Path
@@ -28,23 +29,50 @@ class NotesApp:
         paned_window.pack(fill=tk.BOTH, expand=1)
 
         # Left Panel
-        self.left_frame = tk.Frame(paned_window, bg="lightblue", width=150)
-        self.left_frame.pack_propagate(False)
+        # self.left_frame = tk.Frame(paned_window, bg="lightblue", width=150)
+        # self.left_frame.pack_propagate(False)
+        self.note_tree_view()
+        self.left_frame = self.treeview
+        self.left_frame.pack()
 
-        button_left = tk.Button(self.left_frame, text="Left Button", command=self.on_left_button)
-        button_left.pack(pady=20)
+        # button_left = tk.Button(self.left_frame, text="Left Button", command=self.on_left_button)
+        # button_left.pack(pady=20)
 
         # Right Panel
         self.right_frame = tk.Frame(paned_window, bg="lightgreen")
         self.right_frame.pack_propagate(False)
+        
 
         self.text_input = tk.Text(self.right_frame)
         self.text_input.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        self.button_right = tk.Button(self.right_frame, text="Right Button", command=self.on_right_button)
+        self.button_right = tk.Button(self.right_frame, text="Save", command=self.on_right_button)
         self.button_right.pack()
 
         paned_window.add(self.left_frame)
         paned_window.add(self.right_frame)
+
+
+    def note_tree_view(self):
+        data_root = "data"
+        self.treeview = ttk.Treeview()
+        # item = self.treeview.insert("", tk.END, text="Test Root") #folders
+        all_items = os.listdir(data_root)
+
+        folders = [f for f in all_items if os.path.isdir(os.path.join("data", f))]
+        for folder in folders:
+            folder_path = os.path.join(data_root, folder)
+            item_f = self.treeview.insert("", tk.END, text=folder)
+            files = [
+                file for file in os.listdir(folder_path)
+                if os.path.isfile(os.path.join(folder_path, file)) and file.endswith(".md")
+            ]
+            logger.info(files)
+            for note in files:
+                logger.info(f"Files {note}")
+                self.treeview.insert(item_f, tk.END, text=note) #files (with .md)
+
+        # node.pack()
+        
 
     def on_left_button(self):
         mbox.showinfo("Message", "Left Button Clicked")
