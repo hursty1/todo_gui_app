@@ -4,7 +4,7 @@ import tkinter.messagebox as mbox
 import os
 from pathlib import Path
 import logging
-
+from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
@@ -15,12 +15,12 @@ class NotesApp:
         self.root.geometry("800x600")  # Set initial size
         self.default_path = default_path
         self.extension = extension
-
+        self.editting = False
         # Create and use a directory for note files
         self.notes_dir = Path("data")
         self.notes_dir.mkdir(parents=True, exist_ok=True)  # creates 'data/' if missing
-        self.filename = self.notes_dir / "notes.md"         # saves to data/notes.md
-
+        # self.filename = self.notes_dir / "notes.md"         # saves to data/notes.md
+        self.filename = None
 
         self.setup_ui()
 
@@ -28,15 +28,14 @@ class NotesApp:
         paned_window = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, showhandle=True)
         paned_window.pack(fill=tk.BOTH, expand=1)
 
-        # Left Panel
-        # self.left_frame = tk.Frame(paned_window, bg="lightblue", width=150)
-        # self.left_frame.pack_propagate(False)
+
+        self.treeview = ttk.Treeview()
+        self.treeview.bind('<<TreeviewSelect>>', self.on_file_selected)
+        
         self.note_tree_view()
         self.left_frame = self.treeview
         self.left_frame.pack()
 
-        # button_left = tk.Button(self.left_frame, text="Left Button", command=self.on_left_button)
-        # button_left.pack(pady=20)
 
         # Right Panel
         self.right_frame = tk.Frame(paned_window, bg="lightgreen")
@@ -51,10 +50,17 @@ class NotesApp:
         paned_window.add(self.left_frame)
         paned_window.add(self.right_frame)
 
+    def refresh_tree_view(self):
+        selected_items = self.treeview.selection()
+        if selected_items:
+            self.treeview.selection_remove(selected_items)
+        for item in self.treeview.get_children():
+            self.treeview.delete(item)  
+        self.note_tree_view()
 
     def note_tree_view(self):
         data_root = "data"
-        self.treeview = ttk.Treeview()
+        
         # item = self.treeview.insert("", tk.END, text="Test Root") #folders
         all_items = os.listdir(data_root)
 
@@ -70,9 +76,38 @@ class NotesApp:
             for note in files:
                 logger.info(f"Files {note}")
                 self.treeview.insert(item_f, tk.END, text=note) #files (with .md)
-
+        
         # node.pack()
         
+    def on_file_selected(self, event):
+        # try:
+        selected_item_id = self.treeview.selection()[0]
+        item_data = self.treeview.item(selected_item_id)
+
+        label = item_data["text"]
+        parent_id = self.treeview.parent(selected_item_id)
+        parent_data = self.treeview.item(parent_id)
+        folder = parent_data["text"] if parent_id else None
+
+        logger.info(f"Selected item: {label}")
+        logger.info(f"From folder: {folder}")
+
+        #load file 
+        if folder and label.endswith('.md'):
+            self.load_note_from_file(os.path.join("data", folder, label))
+        # except Exception as e:
+        #     logger.error(f"Failed to select item {e}")
+    def load_note_from_file(self, filename):
+        try:
+            logger.info(f"Loading {filename}...")
+            with open(filename, 'r') as file:
+                contents = file.read()
+            self.text_input.delete("1.0", tk.END)
+            self.text_input.insert("1.0", contents)
+            self.editting = True
+            self.filename = filename
+        except Exception as e:
+            logger.error(f"Failed to load file due to: {e}")
 
     def on_left_button(self):
         mbox.showinfo("Message", "Left Button Clicked")
@@ -80,14 +115,33 @@ class NotesApp:
     def on_right_button(self):
         logger.debug("DEBUG save")
         logger.info(self.text_input.get("1.0","end-1c"))
-        if self.filename:
-            self.save_to_file()
+        if not self.editting:
+            #todays folder
+            self.notes_dir #data
+            today = datetime.now().strftime('%Y.%m.%d')
+            today_path = Path(f'data/{today}')
+            today_path.mkdir(parents=True, exist_ok=True) #creates folder
+            current_items = os.listdir(today_path)
+            files = [f for f in current_items if os.path.isfile(os.path.join(today_path, f)) and f.endswith(".md")]
+            new_file_name = str(len(files) + 1) + '.md' #3
+            self.save_to_file(today_path / new_file_name)
+            
+            #we have created a file we will now set editting true and set filename
+            self.editting = True
+            self.filename = today_path / new_file_name
         else:
-            pass #append
+            self.save_to_file() #this is now a edit
 
-    def save_to_file(self):
-        with self.filename.open('w') as file:
-            file.write(self.text_input.get("1.0","end-1c"))
+        self.refresh_tree_view()
+
+    def save_to_file(self, file_name_path = None):
+        if not self.filename:
+            with file_name_path.open('w') as file:
+                file.write(self.text_input.get("1.0","end-1c"))
+        else:
+            logger.info
+            with open(self.filename, 'w') as file:
+                file.write(self.text_input.get("1.0","end-1c"))
 
     def run(self):
         self.root.mainloop()
