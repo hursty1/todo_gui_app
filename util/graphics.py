@@ -16,11 +16,11 @@ class NotesApp:
         self.default_path = default_path
         self.extension = extension
         self.editting = False
-        # Create and use a directory for note files
+
         self.notes_dir = Path("data")
         self.notes_dir.mkdir(parents=True, exist_ok=True)  # creates 'data/' if missing
         # self.filename = self.notes_dir / "notes.md"         # saves to data/notes.md
-        self.filename = None
+        self.filename = None # only used if editting
 
         self.setup_ui()
 
@@ -28,7 +28,7 @@ class NotesApp:
         paned_window = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, showhandle=True)
         paned_window.pack(fill=tk.BOTH, expand=1)
 
-
+        # left panel
         self.treeview = ttk.Treeview()
         self.treeview.bind('<<TreeviewSelect>>', self.on_file_selected)
 
@@ -41,14 +41,27 @@ class NotesApp:
         self.right_frame = tk.Frame(paned_window, bg="lightgreen")
         self.right_frame.pack_propagate(False)
         
-
+        self.new_button = tk.Button(self.right_frame, text="New", command=self.on_new_file)
+        self.new_button.pack()
         self.text_input = tk.Text(self.right_frame)
         self.text_input.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         self.button_right = tk.Button(self.right_frame, text="Save", command=self.on_right_button)
         self.button_right.pack()
 
+        #add to root
         paned_window.add(self.left_frame)
         paned_window.add(self.right_frame)
+    def run(self):
+        self.root.mainloop()
+    def on_new_file(self):
+        logger.info(f"Save and new_file")
+        self.on_right_button() #save path
+        self.clear_input_field() #reset input, editting, filename
+        
+    def clear_input_field(self):
+        self.text_input.delete("1.0", tk.END) #delete contents
+        self.editting = False
+        self.filename = None
 
     def refresh_tree_view(self):
         selected_items = self.treeview.selection()
@@ -61,24 +74,25 @@ class NotesApp:
     def note_tree_view(self):
         data_root = "data"
         
-        # item = self.treeview.insert("", tk.END, text="Test Root") #folders
         all_items = os.listdir(data_root)
 
         folders = [f for f in all_items if os.path.isdir(os.path.join("data", f))]
+        
         for folder in folders:
             folder_path = os.path.join(data_root, folder)
             item_f = self.treeview.insert("", tk.END, text=folder)
+            
             files = [
                 file for file in os.listdir(folder_path)
                 if os.path.isfile(os.path.join(folder_path, file)) and file.endswith(".md")
             ]
             logger.info(files)
+            
             files = sorted(files, key=lambda f: int(f.split(".")[0]), reverse=True) #save as every file has to have .md already
+            
             for note in files:
-                logger.info(f"Files {note}")
                 self.treeview.insert(item_f, tk.END, text=note) #files (with .md)
         
-        # node.pack()
         
     def on_file_selected(self, event):
         
@@ -141,15 +155,15 @@ class NotesApp:
         self.refresh_tree_view()
 
     def save_to_file(self, file_name_path = None):
-        if not self.filename:
+        if not self.filename: #only on new file
             with file_name_path.open('w') as file:
                 file.write(self.text_input.get("1.0","end-1c"))
+            
+            self.load_note_from_file(file_name_path)
         else:
             logger.info
             with open(self.filename, 'w') as file:
                 file.write(self.text_input.get("1.0","end-1c"))
 
-    def run(self):
-        self.root.mainloop()
 
     

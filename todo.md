@@ -1,9 +1,20 @@
-Create a window
-
-type in the window
-
-save contents in the window
+TODO:
 
 
-create sidebar
+* Create List elements
+*   Create SubList Elements
+* Create checkbox elements
+
+
+* Basic formatting stuff
+    * Alt to move line up
+    * 
+
+
+
+Fea
+
+
+
+
 
