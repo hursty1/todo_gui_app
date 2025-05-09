@@ -31,7 +31,7 @@ class NotesApp:
 
         self.treeview = ttk.Treeview()
         self.treeview.bind('<<TreeviewSelect>>', self.on_file_selected)
-        
+
         self.note_tree_view()
         self.left_frame = self.treeview
         self.left_frame.pack()
@@ -73,6 +73,7 @@ class NotesApp:
                 if os.path.isfile(os.path.join(folder_path, file)) and file.endswith(".md")
             ]
             logger.info(files)
+            files = sorted(files, key=lambda f: int(f.split(".")[0]), reverse=True) #save as every file has to have .md already
             for note in files:
                 logger.info(f"Files {note}")
                 self.treeview.insert(item_f, tk.END, text=note) #files (with .md)
@@ -80,8 +81,13 @@ class NotesApp:
         # node.pack()
         
     def on_file_selected(self, event):
-        # try:
-        selected_item_id = self.treeview.selection()[0]
+        
+        selection = self.treeview.selection()
+        if not selection:
+            return
+
+        selected_item_id = selection[0]
+        # selected_item_id = self.treeview.selection()[0]
         item_data = self.treeview.item(selected_item_id)
 
         label = item_data["text"]
@@ -95,8 +101,7 @@ class NotesApp:
         #load file 
         if folder and label.endswith('.md'):
             self.load_note_from_file(os.path.join("data", folder, label))
-        # except Exception as e:
-        #     logger.error(f"Failed to select item {e}")
+        
     def load_note_from_file(self, filename):
         try:
             logger.info(f"Loading {filename}...")
@@ -106,6 +111,7 @@ class NotesApp:
             self.text_input.insert("1.0", contents)
             self.editting = True
             self.filename = filename
+            self.right_frame.config(bg="lightyellow")
         except Exception as e:
             logger.error(f"Failed to load file due to: {e}")
 
