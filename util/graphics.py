@@ -5,12 +5,26 @@ import os
 from pathlib import Path
 import logging
 from datetime import datetime
+
+from util.keybindings import KeybindManager
+from util.menuBar import MenuBar
 logger = logging.getLogger(__name__)
 
 
 class NotesApp:
     def __init__(self, default_path="files", extension='.md'):
         self.root = tk.Tk()
+        self.menu = MenuBar(
+            self.root,
+            on_new=self.on_new_file,
+            on_save=self.on_right_button,
+            on_exit=self.root.quit
+        )
+        self.keybinds = KeybindManager(self.root, {
+            "<Control-s>": self.on_right_button,
+            "<Control-n>": self.on_new_file,
+            "<Control-q>": lambda e: self.root.quit(),
+        })
         self.root.title("Notes")
         self.root.geometry("800x600")  # Set initial size
         self.default_path = default_path
@@ -53,7 +67,7 @@ class NotesApp:
         paned_window.add(self.right_frame)
     def run(self):
         self.root.mainloop()
-    def on_new_file(self):
+    def on_new_file(self, event=None):
         logger.info(f"Save and new_file")
         self.on_right_button() #save path
         self.clear_input_field() #reset input, editting, filename
@@ -132,7 +146,7 @@ class NotesApp:
     def on_left_button(self):
         mbox.showinfo("Message", "Left Button Clicked")
 
-    def on_right_button(self):
+    def on_right_button(self, event=None):
         logger.debug("DEBUG save")
         logger.info(self.text_input.get("1.0","end-1c"))
         if not self.editting:
