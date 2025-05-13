@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import logging
 from datetime import datetime
-
+import re
 from util.keybindings import KeybindManager
 from util.menuBar import MenuBar
 logger = logging.getLogger(__name__)
@@ -55,13 +55,15 @@ class NotesApp:
         self.right_frame = tk.Frame(paned_window, bg="lightgreen")
         self.right_frame.pack_propagate(False)
         
-        self.new_button = tk.Button(self.right_frame, text="New", command=self.on_new_file)
-        self.new_button.pack()
+        # self.new_button = tk.Button(self.right_frame, text="New", command=self.on_new_file)
+        # self.new_button.pack()
         self.text_input = tk.Text(self.right_frame)
         self.text_input.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        self.button_right = tk.Button(self.right_frame, text="Save", command=self.on_right_button)
-        self.button_right.pack()
-
+        # self.button_right = tk.Button(self.right_frame, text="Save", command=self.on_right_button)
+        # self.button_right.pack()
+        #bind key_release to formatting
+        self.text_input.bind("<KeyRelease>", self.apply_formatting)
+        self.text_input.tag_configure("list", lmargin1=20, lmargin2=40, foreground="blue")
         #add to root
         paned_window.add(self.left_frame)
         paned_window.add(self.right_frame)
@@ -85,6 +87,18 @@ class NotesApp:
             self.treeview.delete(item)  
         self.note_tree_view()
 
+    def apply_formatting(self, event=None):
+        try:
+            current_index = self.text_input.index("insert")   # e.g., "3.7"
+            pos = current_index.split(".")[0]
+            logger.info(f"cursor position is: {pos}")
+            line = self.text_input.get(f"{pos}.0", f"{pos}.end")
+            logger.info(f"Line is: {line}")
+            if re.match(r"^\*", line):
+                self.text_input.tag_add("list", f"{pos}.0", f"{pos}.end")
+                logger.info("Added tag to line: {pos}")
+        except Exception as e:
+            logger.error(e)
     def note_tree_view(self):
         data_root = "data"
         
