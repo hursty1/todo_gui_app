@@ -94,11 +94,34 @@ class NotesApp:
             logger.info(f"cursor position is: {pos}")
             line = self.text_input.get(f"{pos}.0", f"{pos}.end")
             logger.info(f"Line is: {line}")
-            if re.match(r"^\*", line):
-                self.text_input.tag_add("list", f"{pos}.0", f"{pos}.end")
-                logger.info("Added tag to line: {pos}")
+            self._apply_formatting(line, pos)
+            # if re.match(r"^\*", line):
+            #     self.text_input.tag_add("list", f"{pos}.0", f"{pos}.end")
+            #     logger.info("Added tag to line: {pos}")
         except Exception as e:
             logger.error(e)
+
+    def remove_tags(self):
+        #remove tags
+        self.text_input.tag_remove("list", "1.0", "end")
+
+    def _apply_formatting_load(self):
+        self.remove_tags()
+        lines = int(self.text_input.index("end-1c").split(".")[0])
+        for i in range(1, lines + 1):
+            line = self.text_input.get(f"{i}.0", f"{i}.end") 
+            self._apply_formatting(line, i)
+   
+    def _apply_formatting(self, line, index)->str:
+        '''
+        This helper function takes a line of text and returns the formatted version
+        applying tags if nessicary
+        '''
+        if re.match(r"^\*", line):
+            self.text_input.tag_add("list", f"{index}.0", f"{index}.end")
+            logger.info("Added tag to line: {pos}")
+    
+    
     def note_tree_view(self):
         data_root = "data"
         
@@ -154,6 +177,7 @@ class NotesApp:
             self.editting = True
             self.filename = filename
             self.right_frame.config(bg="lightyellow")
+            self._apply_formatting_load()
         except Exception as e:
             logger.error(f"Failed to load file due to: {e}")
 
